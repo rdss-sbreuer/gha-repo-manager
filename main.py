@@ -61,6 +61,7 @@ def main():  # noqa: C901
 
     if inputs["action"] == "apply":
         errors = []
+        actions_toolkit.debug("In Apply")
 
         # Because we cannot diff secrets, just apply it every time
         if config.secrets is not None:
@@ -125,11 +126,13 @@ def main():  # noqa: C901
             for label_name in labels_diff["diffs"].keys():
                 update_label(inputs["repo_object"], config.labels_dict[label_name])
                 actions_toolkit.info(f"Updated label {label_name}")
-
+        actions_toolkit.debug("Before branch protection")
         bp_diff = diffs.get("branch_protections", None)
         if bp_diff is not None:
+            actions_toolkit.debug("In BP_Diff")
             # delete branch protection
             for branch_name in bp_diff["extra"]:
+                actions_toolkit.debug(f"Extra Branch: {branch_name}")
                 try:
                     this_branch = inputs["repo_object"].get_branch(branch_name)
                     this_branch.remove_protection()
@@ -148,9 +151,11 @@ def main():  # noqa: C901
 
             # update or create branch protection
             for branch_name in bp_diff["missing"] + list(bp_diff["diffs"].keys()):
+                actions_toolkit.debug(f"Missing Branch: {branch_name}")
                 try:
                     bp_config = config.branch_protections_dict[branch_name]
                     if bp_config.protection is not None:
+                        actions_toolkit.debug("In bp_config.protection is not none if")
                         update_branch_protection(inputs["repo_object"], branch_name, bp_config.protection)
                         actions_toolkit.info(f"Updated branch proection for {branch_name}")
                     else:

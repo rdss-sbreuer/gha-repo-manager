@@ -1,4 +1,5 @@
 from copy import deepcopy
+import json
 from typing import Any
 from typing import Dict
 from typing import List
@@ -31,7 +32,6 @@ def update_branch_protection(repo: Repository, branch: str, protection_config: P
     def edit_protection(  # nosec
         branch,
         strict=NotSet,
-        checks=NotSet,
         contexts=NotSet,
         enforce_admins=NotSet,
         dismissal_users=NotSet,
@@ -50,7 +50,6 @@ def update_branch_protection(repo: Repository, branch: str, protection_config: P
         """
         :calls: `PUT /repos/{owner}/{repo}/branches/{branch}/protection <https://docs.github.com/en/rest/reference/repos#get-branch-protection>`_
         :strict: bool
-        :checks: list of Checks
         :contexts: list of Contexts
         :enforce_admins: bool
         :dismissal_users: list of strings
@@ -65,7 +64,6 @@ def update_branch_protection(repo: Repository, branch: str, protection_config: P
         changing. Use edit_required_status_checks() to avoid this.
         """
         assert strict is NotSet or isinstance(strict, bool), strict
-        assert checks is NotSet or all(isinstance(element, Check) for element in checks), checks
         assert contexts is NotSet or all(isinstance(element, str) for element in contexts), contexts
         assert enforce_admins is NotSet or isinstance(enforce_admins, bool), enforce_admins
         assert dismissal_users is NotSet or all(
@@ -90,8 +88,7 @@ def update_branch_protection(repo: Repository, branch: str, protection_config: P
                 contexts = []
             post_parameters["required_status_checks"] = {
                 "strict": strict,
-                "contexts": contexts,
-                "checks": checks
+                "contexts": contexts
             }
         else:
             post_parameters["required_status_checks"] = None
@@ -164,6 +161,8 @@ def update_branch_protection(repo: Repository, branch: str, protection_config: P
         else:
             post_parameters["required_conversation_resolution"] = None
 
+        actions_toolkit.info(f"Attempting to send request with Post Parameters: {post_parameters}")
+
         headers, data = branch._requester.requestJsonAndCheck(
             "PUT",
             branch.protection_url,
@@ -171,6 +170,39 @@ def update_branch_protection(repo: Repository, branch: str, protection_config: P
             input=post_parameters,
         )
 
+        actions_toolkit.info(f"Data: {data}")
+
+    def edit_required_status_checks(
+        self, strict=NotSet, contexts=NotSet, checks=NotSet
+    ):
+        """
+        :calls: `PATCH /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks <https://docs.github.com/en/rest/reference/repos#branches>`_
+        :strict: bool
+        :contexts: list of strings
+        :checks: list of checks
+        """
+        assert strict is NotSet or isinstance(strict, bool), strict
+        assert contexts is NotSet or all(
+            isinstance(element, str) for element in contexts
+        ), contexts
+        actions_toolkit.info(f"First")
+        assert checks is NotSet or isinstance(list, checks), checks
+        actions_toolkit.info(f"Second")
+
+        post_parameters = {}
+        if strict is not NotSet:
+            post_parameters["strict"] = strict
+        if contexts is not NotSet:
+            post_parameters["contexts"] = contexts
+        
+        post_parameters["checks"] = checks
+        
+        headers, data = self._requester.requestJsonAndCheck(
+            "PATCH",
+            f"{self.protection_url}/required_status_checks",
+            input=post_parameters,
+            
+        )
         actions_toolkit.debug(f"Post Parameters: {post_parameters}")
         actions_toolkit.debug(f"Data: {data}")
 
@@ -178,6 +210,7 @@ def update_branch_protection(repo: Repository, branch: str, protection_config: P
     kwargs = {}
     status_check_kwargs = {}
     extra_kwargs = {}
+    check_kwargs = {}
 
     if protection_config.pr_options is not None:
         attr_to_kwarg("required_approving_review_count", protection_config.pr_options, kwargs)
@@ -217,16 +250,16 @@ def update_branch_protection(repo: Repository, branch: str, protection_config: P
     # these are going to be used by edit_required_status_checks
     attr_to_kwarg("strict", protection_config.required_status_checks, status_check_kwargs)
     attr_to_kwarg(
-        "checks",
-        protection_config.required_status_checks,
-        status_check_kwargs
-    )
-    
-    attr_to_kwarg(
         "contexts",
         protection_config.required_status_checks,
         status_check_kwargs
     )
+
+    checks = protection_config.required_status_checks.checks
+    actions_toolkit.debug(f"Protection Config: {protection_config}")
+    actions_toolkit.debug(f"Protection Config, status checks, checks: {checks}")
+    
+    
 
     # these are not handled by edit_protection, so we have to use the custom api
     attr_to_kwarg(
@@ -244,14 +277,23 @@ def update_branch_protection(repo: Repository, branch: str, protection_config: P
         extra_kwargs
     )
 
+    actions_toolkit.debug(f"Status check kwargs: {status_check_kwargs}")
+
     try:
-        edit_protection(branch=this_branch, **kwargs, **extra_kwargs)
+        edit_protection(branch=this_branch, **kwargs, **extra_kwargs, **status_check_kwargs)
     except GithubException as exc:
         raise ValueError(f"{exc.data['message']} {exc.data['documentation_url']}")
 
     if status_check_kwargs != {}:
         try:
-            this_branch.edit_required_status_checks(**status_check_kwargs)
+            listChecks = list()
+            for check in checks:
+                listChecks.append(check.__dict__)
+            
+            actions_toolkit.debug(f"ListChecks: {listChecks}")
+
+            status_check_kwargs["checks"] = listChecks
+            edit_required_status_checks(**status_check_kwargs)
         except GithubException as exc:
             raise ValueError(f"{exc.data['message']} {exc.data['documentation_url']}")
 

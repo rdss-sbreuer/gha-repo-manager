@@ -22,7 +22,6 @@ class Check(BaseModel):
     context: OptStr = Field(None, description="The name of the required check")
     app_id: OptInt = Field(None, description="The ID of the GitHub App that must provide this check. Omit this field to automatically select the GitHub App that has recently provided this check, or any app if it was not set by a GitHub App. Pass -1 to explicitly allow any app to set the status.")
 
-
 class StatusChecksOptions(BaseModel):
     strict: OptBool = Field(None, description="Require branches to be up to date before merging.")
     contexts: List[str] = Field(None, description=" The list of status checks to require in order to merge into this branch. If any of these checks have recently been set by a particular GitHub App, they will be required to come from that app in future for the branch to merge.")
