@@ -6,6 +6,8 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
+
+from actions_toolkit import core as actions_toolkit
 from github.Consts import mediaTypeRequireMultipleApprovingReviews
 from github.GithubException import GithubException
 from github.GithubObject import NotSet
@@ -169,6 +171,9 @@ def update_branch_protection(repo: Repository, branch: str, protection_config: P
             input=post_parameters,
         )
 
+        actions_toolkit.debug(f"Post Parameters: {post_parameters}")
+        actions_toolkit.debug(f"Data: {data}")
+
     this_branch = repo.get_branch(branch)
     kwargs = {}
     status_check_kwargs = {}
@@ -213,6 +218,12 @@ def update_branch_protection(repo: Repository, branch: str, protection_config: P
     attr_to_kwarg("strict", protection_config.required_status_checks, status_check_kwargs)
     attr_to_kwarg(
         "checks",
+        protection_config.required_status_checks,
+        status_check_kwargs
+    )
+    
+    attr_to_kwarg(
+        "contexts",
         protection_config.required_status_checks,
         status_check_kwargs
     )

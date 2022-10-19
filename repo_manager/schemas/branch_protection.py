@@ -25,6 +25,7 @@ class Check(BaseModel):
 
 class StatusChecksOptions(BaseModel):
     strict: OptBool = Field(None, description="Require branches to be up to date before merging.")
+    contexts: List[str] = Field(None, description=" The list of status checks to require in order to merge into this branch. If any of these checks have recently been set by a particular GitHub App, they will be required to come from that app in future for the branch to merge.")
     checks: Optional[List[Check]] = Field(
         None, description="The list of status checks to require in order to merge into this branch"
     )
