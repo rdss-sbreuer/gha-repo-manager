@@ -11,7 +11,7 @@ from github.GithubException import GithubException
 from github.GithubObject import NotSet
 from github.Repository import Repository
 
-from repo_manager.schemas.branch_protection import BranchProtection
+from repo_manager.schemas.branch_protection import BranchProtection, Check
 from repo_manager.schemas.branch_protection import ProtectionOptions
 from repo_manager.utils import attr_to_kwarg
 
@@ -29,6 +29,7 @@ def update_branch_protection(repo: Repository, branch: str, protection_config: P
     def edit_protection(  # nosec
         branch,
         strict=NotSet,
+        checks=NotSet,
         contexts=NotSet,
         enforce_admins=NotSet,
         dismissal_users=NotSet,
@@ -47,7 +48,8 @@ def update_branch_protection(repo: Repository, branch: str, protection_config: P
         """
         :calls: `PUT /repos/{owner}/{repo}/branches/{branch}/protection <https://docs.github.com/en/rest/reference/repos#get-branch-protection>`_
         :strict: bool
-        :contexts: list of strings
+        :checks: list of Checks
+        :contexts: list of Contexts
         :enforce_admins: bool
         :dismissal_users: list of strings
         :dismissal_teams: list of strings
@@ -61,6 +63,7 @@ def update_branch_protection(repo: Repository, branch: str, protection_config: P
         changing. Use edit_required_status_checks() to avoid this.
         """
         assert strict is NotSet or isinstance(strict, bool), strict
+        assert checks is NotSet or all(isinstance(element, Check) for element in checks), checks
         assert contexts is NotSet or all(isinstance(element, str) for element in contexts), contexts
         assert enforce_admins is NotSet or isinstance(enforce_admins, bool), enforce_admins
         assert dismissal_users is NotSet or all(
@@ -86,6 +89,7 @@ def update_branch_protection(repo: Repository, branch: str, protection_config: P
             post_parameters["required_status_checks"] = {
                 "strict": strict,
                 "contexts": contexts,
+                "checks": checks
             }
         else:
             post_parameters["required_status_checks"] = None
@@ -320,9 +324,16 @@ def check_repo_branch_protections(
             )
             diffs.append(
                 diff_option(
+                    "required_status_checks::contexts",
+                    config_bp.protection.required_status_checks.contexts,
+                    this_protection.required_status_checks.contexts,
+                )
+            )
+            diffs.append(
+                diff_option(
                     "required_status_checks::checks",
                     config_bp.protection.required_status_checks.checks,
-                    this_protection.required_status_checks.contexts,
+                    this_protection.required_status_checks_.checks,
                 )
             )
 
