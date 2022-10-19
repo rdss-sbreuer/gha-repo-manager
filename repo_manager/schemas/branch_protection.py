@@ -69,7 +69,7 @@ class ProtectionOptions(BaseModel):
         description="If set to true, the restrictions branch protection settings which limits who can push will also block pushes which create new branches, unless the push is initiated by a user, team, or app which has the ability to push. Set to true to restrict new branch creation.",
     )
 
-    require_conversation_resolution: OptBool = Field(
+    required_conversation_resolution: OptBool = Field(
         None,
         description="When enabled, all conversations on code must be resolved before a pull request can be merged.",
     )

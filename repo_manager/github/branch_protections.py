@@ -225,10 +225,9 @@ def update_branch_protection(repo: Repository, branch: str, protection_config: P
     attr_to_kwarg("allow_deletions", protection_config, extra_kwargs)
     attr_to_kwarg("block_creations", protection_config, extra_kwargs)
     attr_to_kwarg(
-        "require_conversation_resolution",
+        "required_conversation_resolution",
         protection_config,
-        extra_kwargs,
-        transform_key="required_conversation_resolution",
+        extra_kwargs
     )
 
     try:
@@ -365,8 +364,8 @@ def check_repo_branch_protections(
         )
         diffs.append(
             diff_option(
-                "require_conversation_resolution",
-                config_bp.protection.require_conversation_resolution,
+                "required_conversation_resolution",
+                config_bp.protection.required_conversation_resolution,
                 this_protection.raw_data["required_conversation_resolution"]["enabled"],
             )
         )
