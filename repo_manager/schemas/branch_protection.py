@@ -7,6 +7,7 @@ from pydantic import Field
 
 OptBool = Optional[bool]
 OptStr = Optional[str]
+OptInt = Optional[int]
 
 
 class RestrictionOptions(BaseModel):
@@ -17,10 +18,14 @@ class RestrictionOptions(BaseModel):
         None, description="List of teams who cannot push to this branch, only available to orgs"
     )
 
+class Check(BaseModel): 
+    context: OptStr = Field(None, description="The name of the required check")
+    app_id: OptInt = Field(None, description="The ID of the GitHub App that must provide this check. Omit this field to automatically select the GitHub App that has recently provided this check, or any app if it was not set by a GitHub App. Pass -1 to explicitly allow any app to set the status.")
+
 
 class StatusChecksOptions(BaseModel):
     strict: OptBool = Field(None, description="Require branches to be up to date before merging.")
-    checks: Optional[List[str]] = Field(
+    checks: Optional[List[Check]] = Field(
         None, description="The list of status checks to require in order to merge into this branch"
     )
 
@@ -82,3 +87,4 @@ class BranchProtection(BaseModel):
     name: OptStr = Field(None, description="Name of the branch")
     protection: Optional[ProtectionOptions] = Field(None, description="Protection options for the branch")
     exists: OptBool = Field(True, description="Set to false to delete a branch protection rule")
+
