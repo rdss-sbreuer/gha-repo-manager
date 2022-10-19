@@ -210,8 +210,7 @@ def update_branch_protection(repo: Repository, branch: str, protection_config: P
     attr_to_kwarg(
         "checks",
         protection_config.required_status_checks,
-        status_check_kwargs,
-        transform_key="contexts",
+        status_check_kwargs
     )
 
     # these are not handled by edit_protection, so we have to use the custom api
